@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b3a75" />
+  <meta name="description" content="Nyati Legal Department — one place to launch every AI tool." />
+  <title>Nyati Legal Workspace</title>
+  <link rel="icon" type="image/png" href="assets/nyati-logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    /* Decide login state before paint so the wrong screen never flashes */
+    try { if (localStorage.getItem("nyati_lw_session")) document.documentElement.dataset.auth = "in"; } catch (e) {}
+  </script>
+  <style>
+    :root {
+      --blue-950: #061f42;
+      --blue-900: #0a2c5c;
+      --blue-800: #0b3a75;   /* Nyati brand blue */
+      --blue-700: #134c95;
+      --blue-600: #1d63c0;
+      --blue-300: #8fbcf2;
+      --blue-100: #e3eefc;
+      --ink:      #0f1f38;
+      --muted:    #5a6b85;
+      --line:     #dbe5f3;
+      --white:    #ffffff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh; min-height: 100dvh;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--ink);
+      background: #f3f7fd;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      display: flex; flex-direction: column;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+
+    /* ---------- Header ---------- */
+    .header {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(255,255,255,.96);
+      backdrop-filter: saturate(160%) blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    .header-inner {
+      max-width: 1240px; margin: 0 auto; padding: 10px 24px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand img { height: 52px; width: auto; }
+    .brand-text { border-left: 1px solid var(--line); padding-left: 14px; }
+    .brand-text strong { display: block; font-size: 15px; color: var(--blue-800); letter-spacing: .02em; }
+    .brand-text span { font-size: 12.5px; color: var(--muted); }
+
+    /* ---------- Login gate ---------- */
+    html:not([data-auth="in"]) .app { display: none; }
+    html[data-auth="in"] .login { display: none; }
+    .app { flex: 1 0 auto; display: flex; flex-direction: column; }
+
+    .user { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+    .avatar {
+      width: 38px; height: 38px; border-radius: 50%; flex: none;
+      display: grid; place-items: center;
+      background: var(--blue-100); color: var(--blue-800); font-weight: 700; font-size: 14px;
+    }
+    .user-name { font-size: 14px; font-weight: 600; color: var(--blue-900); line-height: 1.25; }
+    .user-name small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
+    .logout {
+      font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+      color: var(--blue-800); background: var(--white);
+      border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px;
+      transition: background .2s, border-color .2s;
+    }
+    .logout:hover { background: var(--blue-100); border-color: var(--blue-300); }
+
+    .login {
+      position: relative; flex: 1 0 auto; min-height: 100vh; min-height: 100dvh;
+      display: grid; place-items: center; padding: 32px 16px;
+      background: var(--blue-900) center / cover no-repeat;
+    }
+    .login::before {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(6,31,66,.92) 0%, rgba(11,58,117,.8) 55%, rgba(29,99,192,.55) 100%);
+    }
+    .login-card {
+      position: relative; width: 100%; max-width: 420px;
+      background: var(--white); border-radius: 22px; padding: 36px 32px 30px;
+      box-shadow: 0 30px 80px rgba(3,15,35,.45);
+    }
+    .login-card img { height: 92px; width: auto; margin: 0 auto; }
+    .login-card h1 { margin-top: 22px; text-align: center; font-size: 22px; font-weight: 800; color: var(--blue-900); letter-spacing: -.01em; }
+    .login-card p.sub { margin-top: 6px; text-align: center; font-size: 14px; color: var(--muted); }
+    .login-form { margin-top: 26px; display: grid; gap: 16px; }
+    .field label { display: block; font-size: 13px; font-weight: 600; color: var(--blue-900); margin-bottom: 6px; }
+    .field-box { position: relative; }
+    .field input {
+      width: 100%; font: inherit; font-size: 15px; color: var(--ink);
+      padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: #f8fbff;
+      transition: border-color .2s, box-shadow .2s, background .2s;
+    }
+    .field input:focus { outline: none; border-color: var(--blue-600); background: var(--white); box-shadow: 0 0 0 4px rgba(29,99,192,.15); }
+    .field input[type="password"], .field input.pw { padding-right: 64px; }
+    .toggle-pw {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      font: inherit; font-size: 12.5px; font-weight: 600; color: var(--blue-600);
+      background: none; border: 0; cursor: pointer; padding: 6px 8px;
+    }
+    .login-error {
+      display: none; font-size: 13.5px; color: #b42318;
+      background: #fef3f2; border: 1px solid #fecdca; border-radius: 10px; padding: 10px 12px;
+    }
+    .login-error.show { display: block; }
+    .login-btn {
+      font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+      color: var(--white); background: var(--blue-800);
+      border: 0; border-radius: 12px; padding: 13px 16px; margin-top: 4px;
+      transition: background .2s;
+    }
+    .login-btn:hover { background: var(--blue-600); }
+    .login-btn:disabled { opacity: .7; cursor: default; }
+    .login-foot { margin-top: 20px; text-align: center; font-size: 12.5px; color: var(--muted); }
+
+    /* ---------- Hero ---------- */
+    .hero {
+      position: relative; overflow: hidden; flex: 1 0 auto;
+      min-height: 560px;
+      display: flex; align-items: center;
+      color: var(--white);
+      background: var(--blue-900);
+    }
+    .hero-slides { position: absolute; inset: 0; }
+    .hero-slides div {
+      position: absolute; inset: 0;
+      background-size: cover; background-position: center;
+      opacity: 0; transform: scale(1.06);
+      transition: opacity 1.6s ease, transform 8s ease-out;
+    }
+    .hero-slides div.active { opacity: 1; transform: scale(1); }
+    .hero::after {
+      content: ""; position: absolute; inset: 0;
+      background:
+        linear-gradient(100deg, rgba(6,31,66,.94) 0%, rgba(11,58,117,.82) 42%, rgba(19,76,149,.35) 100%),
+        linear-gradient(0deg, rgba(6,31,66,.55) 0%, rgba(6,31,66,0) 40%);
+    }
+    .hero-inner {
+      position: relative; z-index: 2;
+      max-width: 1240px; width: 100%; margin: 0 auto; padding: 72px 24px 140px;
+      display: grid; grid-template-columns: 1.2fr .8fr; gap: 48px; align-items: center;
+    }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--blue-100);
+      background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.22);
+      padding: 7px 14px; border-radius: 999px;
+    }
+    .eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #5fd0ff; box-shadow: 0 0 0 4px rgba(95,208,255,.25); }
+    .hero h1 {
+      margin-top: 22px;
+      font-size: clamp(34px, 5.2vw, 60px); font-weight: 800; line-height: 1.07; letter-spacing: -.025em;
+    }
+    .hero h1 em { font-style: normal; color: var(--blue-300); }
+    .hero p.lead {
+      margin-top: 20px; max-width: 560px;
+      font-size: clamp(16px, 1.6vw, 18.5px); color: rgba(255,255,255,.86);
+    }
+
+    .hero-card {
+      background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.22);
+      backdrop-filter: blur(14px);
+      border-radius: 22px; padding: 26px;
+    }
+    .hero-card h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .1em; color: var(--blue-100); font-weight: 600; }
+    .hero-card ul { list-style: none; margin-top: 16px; display: grid; gap: 10px; }
+    .hero-card li a {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 12px 14px; border-radius: 12px;
+      background: rgba(255,255,255,.08); font-weight: 500; font-size: 15px;
+      border: 1px solid transparent;
+      transition: background .25s, border-color .25s, transform .25s, box-shadow .25s;
+    }
+    .hero-card li a:hover {
+      background: rgba(255,255,255,.22);
+      border-color: rgba(255,255,255,.45);
+      transform: translateX(6px);
+      box-shadow: 0 8px 24px rgba(6,31,66,.35);
+    }
+    .hero-card li a.pending { cursor: default; }
+    .hero-card li a span.num {
+      width: 28px; height: 28px; border-radius: 8px; flex: none;
+      display: grid; place-items: center; font-size: 12.5px; font-weight: 700;
+      background: rgba(255,255,255,.16);
+      transition: background .25s, color .25s;
+    }
+    .hero-card li a:hover span.num { background: var(--white); color: var(--blue-800); }
+    .hero-card li a svg { transition: transform .25s; }
+    .hero-card li a:hover svg { transform: translate(2px, -2px); }
+    .hero-card li a .label { flex: 1; }
+    .hero-card li a .soon { font-size: 12px; color: var(--blue-100); opacity: .8; }
+
+    .hero-dots { position: absolute; z-index: 3; left: 50%; bottom: 96px; transform: translateX(-50%); display: flex; gap: 8px; }
+    .hero-dots button {
+      width: 26px; height: 4px; border: 0; border-radius: 4px; cursor: pointer;
+      background: rgba(255,255,255,.35); transition: background .3s, width .3s;
+    }
+    .hero-dots button.active { background: var(--white); width: 42px; }
+
+    /* ---------- Stats strip ---------- */
+    .strip {
+      position: relative; z-index: 5; width: 100%;
+      max-width: 1240px; margin: -64px auto 0; padding: 0 24px 40px;
+    }
+    .strip-inner {
+      background: var(--white); border-radius: 18px;
+      box-shadow: 0 2px 4px rgba(10,44,92,.08), 0 22px 48px rgba(10,44,92,.18);
+      display: grid; grid-template-columns: repeat(4, 1fr);
+    }
+    .strip-item { padding: 22px 26px; display: flex; gap: 14px; align-items: center; }
+    .strip-item + .strip-item { border-left: 1px solid var(--line); }
+    .strip-icon {
+      width: 44px; height: 44px; border-radius: 12px; flex: none;
+      display: grid; place-items: center;
+      background: var(--blue-100); color: var(--blue-800);
+    }
+    .strip-item strong { display: block; font-size: 15px; }
+    .strip-item span { font-size: 13px; color: var(--muted); }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 1100px) {
+      .strip-inner { grid-template-columns: repeat(2, 1fr); }
+      .strip-item:nth-child(3) { border-left: 0; }
+      .strip-item:nth-child(n+3) { border-top: 1px solid var(--line); }
+    }
+    @media (max-width: 960px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 36px; padding: 56px 20px 130px; }
+    }
+    @media (max-width: 560px) {
+      .header-inner { padding: 8px 16px; }
+      .brand img { height: 42px; }
+      .brand-text span { display: none; }
+      .user { gap: 8px; }
+      .user-name { display: none; }
+      .logout { padding: 7px 12px; font-size: 13px; }
+      .login-card { padding: 28px 20px 24px; border-radius: 18px; }
+      .login-card img { height: 76px; }
+      .hero { min-height: 0; }
+      .hero-inner { gap: 28px; padding: 36px 16px 118px; }
+      .hero h1 { margin-top: 16px; font-size: clamp(30px, 9vw, 38px); }
+      .hero p.lead { margin-top: 14px; }
+      .eyebrow { font-size: 11px; padding: 6px 12px; }
+      .hero-card { padding: 18px 14px; border-radius: 18px; }
+      .hero-card li a { padding: 12px; font-size: 14.5px; }
+      .hero-card li a:hover { transform: none; }
+      .hero-dots { bottom: 84px; }
+      .strip { padding: 0 16px 28px; }
+      .strip-item { flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px; }
+      .strip-icon { width: 38px; height: 38px; border-radius: 10px; }
+      .strip-item strong { font-size: 14px; }
+      .strip-item span { font-size: 12px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Login ===== -->
+  <section class="login" id="login">
+    <div class="login-card">
+      <img src="assets/nyati-logo.png" alt="Nyati" />
+      <h1>Legal Workspace</h1>
+      <p class="sub">Sign in to open your AI tools</p>
+      <form class="login-form" id="loginForm" novalidate>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" autocomplete="username" placeholder="name@company.com" required />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="field-box">
+            <input id="password" class="pw" type="password" autocomplete="current-password" placeholder="Enter your password" required />
+            <button type="button" class="toggle-pw" id="togglePw">Show</button>
+          </div>
+        </div>
+        <div class="login-error" id="loginError" role="alert"></div>
+        <button type="submit" class="login-btn" id="loginBtn">Sign in</button>
+      </form>
+      <p class="login-foot">For Nyati Legal Department members only.</p>
+    </div>
+  </section>
+
+  <div class="app">
+  <!-- ===== Header ===== -->
+  <header class="header">
+    <div class="header-inner">
+      <a class="brand" href="#" aria-label="Nyati home">
+        <img src="assets/nyati-logo.png" alt="Nyati" />
+        <div class="brand-text">
+          <strong>LEGAL WORKSPACE</strong>
+          <span>AI tools for land &amp; legal teams</span>
+        </div>
+      </a>
+      <div class="user">
+        <div class="avatar" id="userInitials"></div>
+        <div class="user-name"><span id="userName"></span><small>Signed in</small></div>
+        <button type="button" class="logout" id="logoutBtn">Log out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== Hero ===== -->
+  <section class="hero">
+    <div class="hero-slides" id="heroSlides"></div>
+    <div class="hero-inner">
+      <div>
+        <span class="eyebrow">Nyati Group · Legal Department</span>
+        <h1>Every legal &amp; land tool,<br /><em>one front door.</em></h1>
+        <p class="lead">
+          From title checks to task tracking, launch the AI tools behind every
+          Nyati property in one click.
+        </p>
+      </div>
+      <aside class="hero-card" aria-label="Quick launch">
+        <h3>Quick launch</h3>
+        <ul id="quickList"></ul>
+      </aside>
+    </div>
+    <div class="hero-dots" id="heroDots" aria-label="Background images"></div>
+  </section>
+
+  <!-- ===== Stats strip ===== -->
+  <div class="strip">
+    <div class="strip-inner">
+      <div class="strip-item">
+        <div class="strip-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+        <div><strong id="toolCount">AI tools</strong><span>All in one place</span></div>
+      </div>
+      <div class="strip-item">
+        <div class="strip-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+        <div><strong>One click</strong><span>Straight into each tool</span></div>
+      </div>
+      <div class="strip-item">
+        <div class="strip-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg></div>
+        <div><strong>Built for real estate</strong><span>Land, title &amp; compliance</span></div>
+      </div>
+      <div class="strip-item">
+        <div class="strip-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 6v6l4 2"/></svg></div>
+        <div><strong>Available 24/7</strong><span>From any device</span></div>
+      </div>
+    </div>
+  </div>
+  </div><!-- /.app -->
+
+  <script>
+    /* ============================================================
+       TOOLS: edit names and links here.
+       Leave url as "" to show the tool without a link.
+       ============================================================ */
+    const TOOLS = [
+      { name: "Search Engine",          url: "" },
+      { name: "Task Management",        url: "https://nyatitask.ai.studio" },
+      { name: "Legal GPT",              url: "https://nyatilegalgpt.ai.studio" },
+      { name: "Land & Legal Dashboard", url: "https://legalkrakpimanagementsystem.ai.studio" },
+      { name: "Document Intelligence",  url: "https://docscomparisontool.vercel.app/dashboard" }
+    ];
+
+    /* Real-estate photography (Unsplash) */
+    const PHOTOS = [
+      "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=2000&q=75",
+      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=2000&q=75",
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=2000&q=75",
+      "https://images.unsplash.com/photo-1460317442991-0ec209397118?auto=format&fit=crop&w=2000&q=75"
+    ];
+
+    const arrow = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>`;
+    const pad = n => String(n).padStart(2, "0");
+
+    /* ---------- Render quick-launch list ---------- */
+    const quick = document.getElementById("quickList");
+    TOOLS.forEach((t, i) => {
+      const live = Boolean(t.url);
+      const attrs = live ? `href="${t.url}" target="_blank" rel="noopener"` : `class="pending" aria-disabled="true"`;
+      quick.insertAdjacentHTML("beforeend", `
+        <li><a ${attrs}><span class="num">${pad(i + 1)}</span><span class="label">${t.name}</span>${live ? arrow : ""}</a></li>`);
+    });
+    document.getElementById("toolCount").textContent = `${TOOLS.length} AI tools`;
+
+    /* ---------- Hero slideshow ---------- */
+    const slides = document.getElementById("heroSlides");
+    const dots = document.getElementById("heroDots");
+    PHOTOS.forEach((src, i) => {
+      const d = document.createElement("div");
+      d.style.backgroundImage = `url("${src}")`;
+      slides.appendChild(d);
+      const b = document.createElement("button");
+      b.setAttribute("aria-label", `Show image ${i + 1}`);
+      b.onclick = () => { show(i); restart(); };
+      dots.appendChild(b);
+    });
+    let current = 0, timer;
+    function show(i) {
+      current = i;
+      [...slides.children].forEach((s, k) => s.classList.toggle("active", k === i));
+      [...dots.children].forEach((s, k) => s.classList.toggle("active", k === i));
+    }
+    function restart() {
+      clearInterval(timer);
+      timer = setInterval(() => show((current + 1) % PHOTOS.length), 6000);
+    }
+    show(0); restart();
+
+    /* ============================================================
+       LOGIN
+       USERS maps email -> [name, sha256("email:password")].
+       Passwords are stored only as hashes, never as plain text.
+       ============================================================ */
+    const USERS = {
+      "srinivas.iyer@company.com": ["Srinivas Iyer", "4278698a7456c8feb6e8475d00e5a4bd60f0d2dabbc3d9829fe3426be5cdcce8"],
+      "anita.kelkar@company.com": ["Anita Kelkar", "e780d96550326555d1ad7e8871adbf4ad3be93e6ae2086e39394fcfb62998c78"],
+      "abhaysinhdhole@company.com": ["Abhaysinh Dhole", "2243aad7f98db15353061b40a4f43ce907bedaa2dff7d2300f6ca7c078dadca1"],
+      "amoldeshmukh@company.com": ["Amol Deshmukh", "05e132f238bd62dcf96fd72fd62da8e53d509d6896d12287b73d5ce466317675"],
+      "pravindaga@company.com": ["Pravin Daga", "dbbbfbbcac262f436107e140d0441984f35f9f2ebade5dc5b6538d3c7df95763"],
+      "deepakpawar@company.com": ["Deepak Pawar", "1cd8c3f5f0352e6854dca0a3a861e89ca6ac40ff1b6d442c00a5e4a0b4b29327"],
+      "sachinshinde@company.com": ["Sachin Shinde", "709941ac6a11ba9a86bd18cd934a3ae1464f6f82ec1361fcc0523e87b34d1d10"],
+      "juned.peerzade@company.com": ["Juned Peerzade", "587741580d560ba28e455f36583ff9fbc0e088986ef56e3bbe125192a43f6581"],
+      "deepakhole@company.com": ["Deepak Hole", "b36cb96f304d6ccdf27aa4b3f8fb1c5603ac916f4fb45221a764eaa603d49b2a"],
+      "prasadtemkar@company.com": ["Prasad Temkar", "6702c9e9f0fcdee675be29e4b98b7fbfa749f17f6567de0b97e90682a7d8dbb6"],
+      "madhavmaral@company.com": ["Madhav Maral", "c789ac809c3b6d48e1af232f8b3ab017a46e71ca1e2721c8c16853ec0cd16120"],
+      "yakshapalrecha@company.com": ["Yaksha Palrecha", "8e9d3ac3855ce50776b45a55e930dd6c650d46796df7c0a09600b67310772fef"],
+      "ashok.patil@company.com": ["Ashok Patil", "c50ec426205daadfb7a8e1d9c4a45e7b7b7540134633e67fa663ea989be01d29"],
+      "deepak.lukade@company.com": ["Deepak Lukade", "f3bfab9da7a5f206cec816c9229c014b9e3e9347ef6b41f2ee2346f4ae366c32"],
+      "dilip.jaysingkar@company.com": ["Dilip Jaysingkar", "09367df62c88cffacfe0683007e1dda69b2144b6b09860d66fdc1ba410f32094"],
+      "sadanand.chavan@company.com": ["Sadanand Chavan", "de79b0deec170b720ad0a7ae3c5e800bc99c288f4f980b9d5b2d40018f323d16"],
+      "ashok.zanjurne@company.com": ["Ashok Zanjurne", "24424a1bf7253e7829e1bd0bb69a36b5086bb4dbbdc206a0d649f110ad8c46ab"],
+      "eknath.chavan@company.com": ["Eknath Chavan", "f3f2f0d1b0aa537a0f1fd6cc1ffb94423ea4e409639f467f5537e0064ef687c2"],
+      "pralhad.chavan@company.com": ["Pralhad Chavan", "d4941e666bbe9e81552e52a2294c79fd2d8376538f283164d3db99b4e04d08e3"],
+      "ananda.bhosale@company.com": ["Ananda Bhosale", "78cff22af067e149a73875549ad4107229ecd0eb8af6d62609a1e584a93e8864"],
+      "prashantkshirsagar@company.com": ["Prashant Kshirsagar", "11e3475b25078085e4eefdbd4a541d6bbae9ca6761168f385e83c938864e45aa"],
+      "vinodjadhav@company.com": ["Vinod Jadhav", "08a5ab924191be6d562f05532f2ec50730c4d4a25350145d3d94d83bdddfcd52"],
+      "omkartodkar@company.com": ["Omkar Todkar", "8df05cceaeda9ba219c3ff090b132e98aab3b71239b735eaa38facb9925b15c7"],
+      "kiranbhangale@company.com": ["Kiran Bhangale", "0ec1643d55056bd3f701153bb48e641d800072da82990a6bb98cbbff95cc7292"],
+      "ds.chohan@company.com": ["Ganesh Dudhani", "6d82ad70813700d4cc6efe3e047d7bf8ae7dbd610e2e9dba5f14af0527023cf2"],
+      "amit.natekar@company.com": ["Pralhad Narhare", "cbee12bce2d011041c57fecc84c0696d0da9a69ca5a644c61c778a8927258724"],
+      "rahul.kankriya@company.com": ["Navnath Marne", "c1230d8226bd58f022941b94ac95d35229cd666a4e30a441acd4f29f73682100"],
+      "shantaram.salunkhe@company.com": ["Sagar Mendhe", "38905fae36882e014c6d222b42d291fb30d9f123e804ec982d3023d9cd032119"],
+      "ganesh.dudhani@company.com": ["Prashant Kolhe", "9088621b8f2c00b2d19357dfe363ce0b946d6d712ec21ee43bd5d0a67370cd5b"],
+      "pralhad.narhare@company.com": ["Ganesh Kharade", "ba56e86ab3523eaec8714b8084f78dafc2f15ab1194c9d88e0ba8bc00d89657c"],
+      "navnath.marne@company.com": ["Sandeep Khandagle", "810d47a34536b4038a104d0f49a4b439be07956e8aa6732668bdb0574e96eb8b"],
+      "sagarmendhe@company.com": ["Angad Gade", "cbd7191a9794dab8557b51c2614ba9e4e6583ed06131ccc171676f67552e357a"],
+      "prashantkolhe@company.com": ["Akash Hingmire", "f2e6da5ed7258d1f5e68a939ea75e77ea6757e4941099a78dc1c682310076fe1"],
+      "ganesh.kharade@company.com": ["D. S. Chohan", "15551aff7755ebf7c6af480b73615a1fbd075986f1bc120aab554560a4d83580"],
+      "sandeepkhandagle@company.com": ["Amit Natekar", "ba612d2a63a9f0fcd5abfd1d0ff8e5361b94afad363d41d0489525e77476e509"],
+      "angadgade@company.com": ["Rahul Kankriya", "19f7c3c3f5a62655d1a270a5e51c2e7cd5154a526fe7b3489e4cf5546e2bcd11"],
+      "akashhingmire@company.com": ["Shantaram Salunkhe", "8e12d2cf2271a077035869def0bf24fc68dae9d15fc551c828a827c369181b3b"]
+    };
+    const SESSION_KEY = "nyati_lw_session";
+
+    async function sha256(text) {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+      return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+    function readSession() {
+      try {
+        const s = JSON.parse(localStorage.getItem(SESSION_KEY));
+        return s && USERS[s.email] ? s : null;
+      } catch (e) { return null; }
+    }
+    function enterApp(session) {
+      document.getElementById("userName").textContent = session.name;
+      document.getElementById("userInitials").textContent =
+        session.name.replace(/\./g, " ").split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join("").toUpperCase();
+      document.documentElement.dataset.auth = "in";
+    }
+    function leaveApp() {
+      try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+      delete document.documentElement.dataset.auth;
+      document.getElementById("loginForm").reset();
+      document.getElementById("email").focus();
+    }
+
+    document.getElementById("login").style.backgroundImage = `url("${PHOTOS[2]}")`;
+
+    const form = document.getElementById("loginForm");
+    const errorBox = document.getElementById("loginError");
+    const loginBtn = document.getElementById("loginBtn");
+    const pwInput = document.getElementById("password");
+
+    document.getElementById("togglePw").onclick = e => {
+      const hidden = pwInput.type === "password";
+      pwInput.type = hidden ? "text" : "password";
+      e.target.textContent = hidden ? "Hide" : "Show";
+    };
+
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      errorBox.classList.remove("show");
+      const email = document.getElementById("email").value.trim().toLowerCase();
+      const password = pwInput.value;
+      if (!email || !password) {
+        errorBox.textContent = "Please enter your email and password.";
+        errorBox.classList.add("show");
+        return;
+      }
+      if (!window.crypto || !crypto.subtle) {
+        errorBox.textContent = "Sign-in needs a secure (https) connection.";
+        errorBox.classList.add("show");
+        return;
+      }
+      loginBtn.disabled = true;
+      const user = USERS[email];
+      const ok = user && (await sha256(`${email}:${password}`)) === user[1];
+      loginBtn.disabled = false;
+      if (!ok) {
+        errorBox.textContent = "Incorrect email or password.";
+        errorBox.classList.add("show");
+        return;
+      }
+      const session = { email, name: user[0] };
+      try { localStorage.setItem(SESSION_KEY, JSON.stringify(session)); } catch (e) {}
+      enterApp(session);
+    });
+
+    document.getElementById("logoutBtn").onclick = leaveApp;
+
+    const existing = readSession();
+    if (existing) enterApp(existing);
+    else delete document.documentElement.dataset.auth;
+  </script>
+</body>
+</html>
